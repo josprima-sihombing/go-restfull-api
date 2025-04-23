@@ -7,6 +7,7 @@ import (
 
 type EnvConfig struct {
 	DatabaseURL string
+	JWTSecret   string
 }
 
 var Env EnvConfig
@@ -14,6 +15,7 @@ var Env EnvConfig
 func LoadEnv() {
 	Env = EnvConfig{
 		DatabaseURL: getConfig("DATABASE_URL"),
+		JWTSecret:   getConfig("JWT_SECRET"),
 	}
 }
 
