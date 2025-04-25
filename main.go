@@ -23,7 +23,7 @@ func main() {
 		userRouter := router.Group("/user")
 		userRouter.POST("/auth/signup", handler.HandleSignup)
 		userRouter.POST("/auth/signin", handler.HandleSignin)
-		userRouter.POST("/auth/me", handler.HandleGetProfile)
+		userRouter.GET("/auth/me", handler.HandleGetProfile)
 	}
 
 	router.Run()

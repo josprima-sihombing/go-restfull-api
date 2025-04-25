@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -39,10 +40,16 @@ type LoginInput struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type UserDetail struct {
+	ID    string
+	Name  string `json:"name" validate:"required"`
+	Email string `json:"email" validate:"required,email"`
+}
+
 type DefaultResponse struct {
-	Success bool              `json:"success"`
-	Message string            `json:"message"`
-	Data    map[string]string `json:"data"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Data    any    `json:"data"`
 }
 
 func HandleSignin(ctx *gin.Context) {
@@ -111,6 +118,8 @@ func HandleSignin(ctx *gin.Context) {
 		})
 		return
 	}
+
+	ctx.SetCookie("token", token, 3600, "/", "", false, true)
 
 	ctx.JSON(http.StatusOK, DefaultResponse{
 		Success: true,
@@ -181,4 +190,56 @@ func HandleSignup(ctx *gin.Context) {
 	})
 }
 
-func HandleGetProfile(ctx *gin.Context) {}
+func HandleGetProfile(ctx *gin.Context) {
+
+	tokenString, err := ctx.Cookie("token")
+
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, DefaultResponse{
+			Success: false,
+			Message: "Unauthorized",
+		})
+
+		return
+	}
+
+	token, err := util.ValidateToken(tokenString)
+
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, DefaultResponse{
+			Success: false,
+			Message: "Unauthorized",
+		})
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+
+	userID := claims["user_id"].(string)
+
+	if !ok || !token.Valid {
+		ctx.JSON(http.StatusUnauthorized, DefaultResponse{
+			Success: false,
+			Message: "Unauthorized 2",
+		})
+		return
+	}
+
+	var user UserDetail
+
+	err = config.DB.QueryRow(context.Background(),
+		"SELECT id, name, email FROM users WHERE id=$1", userID,
+	).Scan(&user.ID, &user.Name, &user.Email)
+
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, DefaultResponse{
+			Success: false,
+			Message: "Unauthorized 2",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, DefaultResponse{
+		Success: true,
+		Data:    user,
+	})
+}
