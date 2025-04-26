@@ -17,7 +17,9 @@ type ErrorResponse struct {
 	Errors  []Error `json:"errors"`
 }
 
-func TransformValidationErrors[T any](err error, model T) ErrorResponse {
+var Validate = validator.New()
+
+func TransformValidationErrors[T any](err error, model T) []Error {
 	var errors []Error
 
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
@@ -46,10 +48,7 @@ func TransformValidationErrors[T any](err error, model T) ErrorResponse {
 		}
 	}
 
-	return ErrorResponse{
-		Success: false,
-		Errors:  errors,
-	}
+	return errors
 }
 
 func validationErrorMessage(fe validator.FieldError) string {
