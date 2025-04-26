@@ -28,8 +28,8 @@ func main() {
 	{
 		userRouter := router.Group("/user")
 		userRouter.POST("/auth/signup", userHandler.HandleSignup)
-		userRouter.POST("/auth/signin", handler.HandleSignin)
-		userRouter.GET("/auth/me", handler.HandleGetProfile)
+		userRouter.POST("/auth/signin", userHandler.HandleSignin)
+		userRouter.GET("/auth/me", userHandler.HandleGetProfile)
 	}
 
 	router.Run()
