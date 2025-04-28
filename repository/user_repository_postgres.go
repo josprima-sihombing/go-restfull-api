@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"go-restfull-api/model"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -35,5 +37,13 @@ func (r *userRepositoryPostgres) FindByEmail(c *context.Context, email string) (
 		"SELECT id, name, email FROM users WHERE email=$1", email,
 	).Scan(&user.ID, &user.Name, &user.Email)
 
-	return &user, err
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &user, nil
 }

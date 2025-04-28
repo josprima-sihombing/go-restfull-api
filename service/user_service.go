@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
-	"errors"
 	"go-restfull-api/model"
 	"go-restfull-api/repository"
 	"go-restfull-api/util"
+	"log"
+	"net/http"
 )
 
 type UserService struct {
@@ -18,18 +19,35 @@ func NewUserService(repo repository.UserRepository) *UserService {
 	}
 }
 
-func (s *UserService) Signup(c context.Context, user *model.User) (any, *model.User) {
+func (s *UserService) Signup(c context.Context, user *model.User) (*util.ApiResponse, *model.User) {
 	err := util.Validate.Struct(user)
 
 	if err != nil {
+		log.Printf("Error: %#v", err)
 		errorResponse := util.TransformValidationErrors(err, user)
-		return &errorResponse, nil
+
+		return &util.ApiResponse{
+			Code: http.StatusBadRequest,
+			Data: errorResponse,
+		}, nil
+	}
+
+	existingUser, err := s.repo.FindByEmail(&c, user.Email)
+
+	if err != nil {
+		return util.ServerError, nil
+	}
+
+	if existingUser != nil {
+		return &util.ApiResponse{
+			Code: http.StatusConflict,
+		}, nil
 	}
 
 	hashedPassword, err := util.HashPassword(user.Password)
 
 	if err != nil {
-		return errors.New("error"), nil
+		return util.ServerError, nil
 	}
 
 	newUser := model.User{
@@ -41,45 +59,48 @@ func (s *UserService) Signup(c context.Context, user *model.User) (any, *model.U
 	err, u := s.repo.Save(&c, &newUser)
 
 	if err != nil {
-		return errors.New("Unexpected error"), nil
+		return util.ServerError, nil
 	}
 
 	return nil, u
 }
 
-func (s *UserService) Signin(c context.Context, credential *model.UserCredential) (any, error) {
+func (s *UserService) Signin(c context.Context, credential *model.UserCredential) (string, *util.ApiResponse) {
 	err := util.Validate.Struct(credential)
 
 	if err != nil {
-		return nil, errors.New("Unexpected error")
+		return "", &util.ApiResponse{
+			Code: http.StatusBadRequest,
+			Data: util.TransformValidationErrors(err, credential),
+		}
 	}
 
 	u, err := s.repo.FindByEmail(&c, credential.Email)
 
 	if err != nil {
-		return nil, errors.New("Unexpected error")
+		return "", util.ServerError
 	}
 
 	err = util.CheckPasswordHash(credential.Password, u.Password)
 
 	if err != nil {
-		return nil, errors.New("Unexpected error")
+		return "", util.ServerError
 	}
 
 	token, err := util.GenerateToken(u.ID)
 
 	if err != nil {
-		return nil, errors.New("Unexpected error")
+		return "", util.ServerError
 	}
 
 	return token, nil
 }
 
-func (s *UserService) GetProfile(c context.Context, email string) (*model.User, error) {
+func (s *UserService) GetProfile(c context.Context, email string) (*model.User, *util.ApiResponse) {
 	user, err := s.repo.FindByEmail(&c, email)
 
 	if err != nil {
-		return nil, errors.New("Unexpected error")
+		return nil, util.ServerError
 	}
 
 	return user, nil

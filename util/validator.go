@@ -7,20 +7,15 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type Error struct {
+type ErrorField struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 }
 
-type ErrorResponse struct {
-	Success bool    `json:"success"`
-	Errors  []Error `json:"errors"`
-}
-
 var Validate = validator.New()
 
-func TransformValidationErrors[T any](err error, model T) []Error {
-	var errors []Error
+func TransformValidationErrors[T any](err error, model T) []ErrorField {
+	var errors []ErrorField
 
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
 		typ := reflect.TypeOf(model)
@@ -41,7 +36,7 @@ func TransformValidationErrors[T any](err error, model T) []Error {
 				}
 			}
 
-			errors = append(errors, Error{
+			errors = append(errors, ErrorField{
 				Field:   jsonTag,
 				Message: validationErrorMessage(fieldErr),
 			})
