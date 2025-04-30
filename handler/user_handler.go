@@ -48,6 +48,7 @@ func (h *UserHandler) HandleSignup(ctx *gin.Context) {
 	signupError, createdUser := h.service.Signup(ctx, &user)
 
 	if signupError != nil {
+		log.Printf("Error: %#v\n", signupError)
 		ctx.JSON(signupError.Code, signupError)
 
 		return

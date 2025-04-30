@@ -35,6 +35,7 @@ func (s *UserService) Signup(c context.Context, user *model.User) (*util.ApiResp
 	existingUser, err := s.repo.FindByEmail(&c, user.Email)
 
 	if err != nil {
+		log.Printf("Error: %#v", err)
 		return util.ServerError, nil
 	}
 
@@ -47,6 +48,7 @@ func (s *UserService) Signup(c context.Context, user *model.User) (*util.ApiResp
 	hashedPassword, err := util.HashPassword(user.Password)
 
 	if err != nil {
+		log.Printf("Error: %#v", err)
 		return util.ServerError, nil
 	}
 
@@ -59,6 +61,7 @@ func (s *UserService) Signup(c context.Context, user *model.User) (*util.ApiResp
 	err, u := s.repo.Save(&c, &newUser)
 
 	if err != nil {
+		log.Printf("Error: %#v", err)
 		return util.ServerError, nil
 	}
 
